@@ -1,0 +1,12 @@
+# Dependencies & environments
+node_modules/
+frontend/node_modules/
+.venv/
+backend/.venv/
+__pycache__/
+*.py[cod]
+dist/
+build/
+.env
+.env.local
+.DS_Store
