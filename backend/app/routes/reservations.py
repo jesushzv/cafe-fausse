@@ -129,7 +129,38 @@ def create_reservation():
     saved_email = customer.email
     saved_phone = customer.phone_number
 
-    # 7. Check table availability and assign table (1-30)
+    def _duplicate_response(existing_res):
+        return jsonify({
+            "error": (
+                f"You already have an active reservation on "
+                f"{existing_res.time_slot.strftime('%A, %B %d at %I:%M %p')} "
+                f"(Table #{existing_res.table_number}). You can modify your existing reservation instead."
+            ),
+            "code": "EXISTING_ACTIVE_RESERVATION",
+            "existing_reservation": {
+                "reservation_id": existing_res.reservation_id,
+                "table_number": existing_res.table_number,
+                "time_slot": existing_res.time_slot.isoformat(),
+                "num_guests": existing_res.num_guests,
+                "customer_name": saved_name,
+                "email": saved_email,
+                "phone_number": saved_phone,
+            },
+        }), 409
+
+    # 7. Enforce one active/upcoming reservation per customer at a time
+    existing = (
+        Reservation.query.filter(
+            Reservation.customer_id == customer_id,
+            Reservation.time_slot >= datetime.now(),
+        )
+        .order_by(Reservation.time_slot.asc())
+        .first()
+    )
+    if existing:
+        return _duplicate_response(existing)
+
+    # 8. Check table availability and assign table (1-30)
     max_attempts = 3
     reservation = None
 
@@ -162,6 +193,12 @@ def create_reservation():
         except IntegrityError:
             db.session.rollback()
             reservation = None
+            existing = Reservation.query.filter_by(
+                customer_id=customer_id,
+                time_slot=parsed_slot,
+            ).first()
+            if existing:
+                return _duplicate_response(existing)
             if attempt == max_attempts - 1:
                 return jsonify({
                     "error": "All 30 tables are fully booked for this time slot. Please select another time."
@@ -189,3 +226,119 @@ def create_reservation():
             "phone_number": saved_phone,
         },
     }), 201
+
+
+@reservations_bp.route("/reservations/<int:reservation_id>", methods=["PUT"])
+def update_reservation(reservation_id):
+    """Modify an existing reservation's party size, contact info, or time slot."""
+    data = request.get_json(silent=True)
+    if not data or not isinstance(data, dict):
+        return jsonify({"error": "Invalid request body. Expected JSON payload."}), 400
+
+    try:
+        customer_name = validate_customer_name(data.get("customer_name"), required=True)
+        email = normalize_email(data.get("email"))
+        num_guests = validate_guests(data.get("num_guests"))
+        parsed_slot = parse_and_validate_time_slot(data.get("time_slot"))
+        phone_number = validate_phone_number(data.get("phone_number"))
+    except ValueError as ve:
+        return jsonify({"error": str(ve)}), 400
+
+    newsletter_signup = bool(data.get("newsletter_signup", False))
+
+    reservation = db.session.get(Reservation, reservation_id)
+    if not reservation:
+        return jsonify({"error": "Reservation not found."}), 404
+
+    customer = reservation.customer
+    if not customer or customer.email.lower() != email.lower():
+        return jsonify({"error": "Email does not match this reservation."}), 403
+
+    customer.customer_name = customer_name
+    if phone_number:
+        customer.phone_number = phone_number
+    if newsletter_signup:
+        customer.newsletter_signup = True
+
+    customer_id = customer.customer_id
+    saved_name = customer.customer_name
+    saved_email = customer.email
+    saved_phone = customer.phone_number
+
+    if parsed_slot == reservation.time_slot:
+        reservation.num_guests = num_guests
+        try:
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            current_app.logger.exception("Unexpected error updating reservation")
+            return jsonify({"error": "Unable to update your reservation right now. Please try again."}), 500
+    else:
+        conflict = Reservation.query.filter(
+            Reservation.customer_id == customer_id,
+            Reservation.time_slot == parsed_slot,
+            Reservation.reservation_id != reservation_id,
+        ).first()
+        if conflict:
+            return jsonify({
+                "error": (
+                    f"You already have another reservation at that time slot "
+                    f"(Table #{conflict.table_number})."
+                ),
+                "code": "DUPLICATE_RESERVATION",
+            }), 409
+
+        max_attempts = 3
+        updated = False
+        for attempt in range(max_attempts):
+            occupied_query = (
+                db.session.query(Reservation.table_number)
+                .filter(Reservation.time_slot == parsed_slot)
+                .all()
+            )
+            occupied_tables = {row[0] for row in occupied_query}
+            available_tables = [t for t in range(1, 31) if t not in occupied_tables]
+
+            if not available_tables:
+                db.session.rollback()
+                return jsonify({
+                    "error": "All 30 tables are fully booked for the new time slot. Please select another time."
+                }), 409
+
+            reservation.time_slot = parsed_slot
+            reservation.table_number = random.choice(available_tables)
+            reservation.num_guests = num_guests
+            try:
+                db.session.commit()
+                updated = True
+                break
+            except IntegrityError:
+                db.session.rollback()
+                reservation = db.session.get(Reservation, reservation_id)
+                if attempt == max_attempts - 1:
+                    return jsonify({
+                        "error": "All 30 tables are fully booked for the new time slot. Please select another time."
+                    }), 409
+            except Exception:
+                db.session.rollback()
+                current_app.logger.exception("Unexpected error moving reservation")
+                return jsonify({"error": "Unable to update your reservation right now. Please try again."}), 500
+
+        if not updated:
+            return jsonify({
+                "error": "All 30 tables are fully booked for the new time slot. Please select another time."
+            }), 409
+
+    return jsonify({
+        "status": "success",
+        "message": f"Your reservation for {num_guests} guests on {parsed_slot.strftime('%A, %B %d at %I:%M %p')} has been updated.",
+        "reservation": {
+            "reservation_id": reservation.reservation_id,
+            "table_number": reservation.table_number,
+            "time_slot": reservation.time_slot.isoformat(),
+            "num_guests": reservation.num_guests,
+            "customer_name": saved_name,
+            "email": saved_email,
+            "phone_number": saved_phone,
+        },
+    }), 200

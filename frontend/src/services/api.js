@@ -64,6 +64,16 @@ export function createReservation(payload) {
 }
 
 /**
+ * Modify an existing dinner reservation by ID.
+ */
+export function updateReservation(reservationId, payload) {
+  return request(`/reservations/${reservationId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+/**
  * Subscribe an email address to the Café Fausse newsletter.
  */
 export function subscribeNewsletter(payload) {

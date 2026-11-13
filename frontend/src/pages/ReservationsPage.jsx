@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { getAvailability, createReservation } from "../services/api";
+import { getAvailability, createReservation, updateReservation } from "../services/api";
 import { RESTAURANT_INFO } from "../data/cafeData";
 
 const EMAIL_REGEX = /^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$/;
@@ -46,6 +46,8 @@ export default function ReservationsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
   const [confirmation, setConfirmation] = useState(null);
+  const [editingReservation, setEditingReservation] = useState(null);
+  const [existingConflict, setExistingConflict] = useState(null);
 
   const fetchSlots = useCallback(
     async (dateStr, { signal } = {}) => {
@@ -99,11 +101,29 @@ export default function ReservationsPage() {
   const handleDateChange = (e) => {
     setSelectedDate(e.target.value);
     setSubmitError(null);
+    setExistingConflict(null);
+  };
+
+  const startEditing = (res) => {
+    if (!res) return;
+    const slotPrefix = res.time_slot ? res.time_slot.slice(0, 16) : "";
+    const datePart = res.time_slot ? res.time_slot.slice(0, 10) : selectedDate;
+    setEditingReservation(res);
+    setConfirmation(null);
+    setSubmitError(null);
+    setExistingConflict(null);
+    setSelectedDate(datePart);
+    setSelectedSlot(slotPrefix);
+    setNumGuests(res.num_guests || 2);
+    setCustomerName(res.customer_name || "");
+    setEmail(res.email || "");
+    setPhoneNumber(res.phone_number || "");
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitError(null);
+    setExistingConflict(null);
 
     if (!selectedSlot) {
       setSubmitError("Please select a dining time slot.");
@@ -133,10 +153,16 @@ export default function ReservationsPage() {
         newsletter_signup: newsletterSignup,
       };
 
-      const res = await createReservation(payload);
+      const res = editingReservation
+        ? await updateReservation(editingReservation.reservation_id, payload)
+        : await createReservation(payload);
+      setEditingReservation(null);
       setConfirmation(res.reservation);
       await fetchSlots(selectedDate);
     } catch (err) {
+      if (err.data?.existing_reservation) {
+        setExistingConflict(err.data.existing_reservation);
+      }
       setSubmitError(
         err.message ||
           "Unable to complete your reservation. Please select another time slot."
@@ -149,6 +175,8 @@ export default function ReservationsPage() {
 
   const handleReset = () => {
     setConfirmation(null);
+    setEditingReservation(null);
+    setExistingConflict(null);
     setSubmitError(null);
     setCustomerName("");
     setEmail("");
@@ -231,26 +259,77 @@ export default function ReservationsPage() {
                   )}
                 </div>
 
-                <button
-                  type="button"
-                  className="btn btn-gold"
-                  onClick={handleReset}
-                >
-                  Make Another Reservation
-                </button>
+                <div className="flex flex-wrap gap-sm">
+                  <button
+                    type="button"
+                    className="btn btn-gold"
+                    onClick={() => startEditing(confirmation)}
+                  >
+                    Modify Reservation
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-outline-dark"
+                    onClick={handleReset}
+                  >
+                    New Booking
+                  </button>
+                </div>
               </div>
             ) : (
               <div className="form-card">
                 <h2 style={{ fontSize: "1.65rem", marginBottom: "0.4rem" }}>
-                  Book Your Table
+                  {editingReservation ? "Modify Your Reservation" : "Book Your Table"}
                 </h2>
                 <p style={{ color: "var(--text-muted)", marginBottom: "1.5rem" }}>
-                  Select a date, preferred seating time, and party size.
+                  {editingReservation
+                    ? `Updating Reservation #${editingReservation.reservation_id} (Currently Table #${editingReservation.table_number}).`
+                    : "Select a date, preferred seating time, and party size."}
                 </p>
+
+                {editingReservation && (
+                  <div
+                    className="alert"
+                    style={{
+                      backgroundColor: "rgba(200, 162, 90, 0.14)",
+                      border: "1px solid var(--gold-primary)",
+                      color: "var(--text-dark)",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      gap: "1rem",
+                      marginBottom: "1.25rem",
+                    }}
+                  >
+                    <span>
+                      Editing booking for <strong>{editingReservation.email}</strong>
+                    </span>
+                    <button
+                      type="button"
+                      className="btn btn-outline-dark"
+                      style={{ padding: "0.35rem 0.75rem", fontSize: "0.82rem" }}
+                      onClick={handleReset}
+                    >
+                      Cancel Edit
+                    </button>
+                  </div>
+                )}
 
                 {submitError && (
                   <div className="alert alert--error" role="alert">
-                    {submitError}
+                    <div>{submitError}</div>
+                    {existingConflict && (
+                      <div style={{ marginTop: "0.75rem" }}>
+                        <button
+                          type="button"
+                          className="btn btn-gold"
+                          style={{ padding: "0.45rem 0.9rem", fontSize: "0.85rem" }}
+                          onClick={() => startEditing(existingConflict)}
+                        >
+                          Modify Existing Reservation
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -381,7 +460,7 @@ export default function ReservationsPage() {
                         placeholder="guest@example.com"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        disabled={submitting}
+                        disabled={submitting || Boolean(editingReservation)}
                         className="form-input"
                         required
                       />
@@ -425,7 +504,13 @@ export default function ReservationsPage() {
                     disabled={submitting || slotsLoading || slots.length === 0}
                     style={{ width: "100%", padding: "0.9rem 1.5rem" }}
                   >
-                    {submitting ? "Confirming Reservation..." : "Confirm Reservation"}
+                    {submitting
+                      ? editingReservation
+                        ? "Updating Reservation..."
+                        : "Confirming Reservation..."
+                      : editingReservation
+                      ? "Update Reservation"
+                      : "Confirm Reservation"}
                   </button>
                 </form>
               </div>
