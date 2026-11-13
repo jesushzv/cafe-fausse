@@ -1,4 +1,4 @@
-"""Vercel Serverless Function entrypoint wrapping the Flask application."""
+"""Vercel Python Serverless Function entrypoint wrapping the Flask application."""
 
 import os
 import sys
@@ -11,3 +11,4 @@ if BACKEND_DIR not in sys.path:
 from app import create_app  # noqa: E402
 
 app = create_app()
+
