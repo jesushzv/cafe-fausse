@@ -7,15 +7,30 @@ export default function LightboxModal({
   onPrev,
   onNext,
 }) {
-  const isOpen = currentIndex !== null && images && images[currentIndex];
+  const isOpen = Boolean(currentIndex !== null && images && images[currentIndex]);
   const closeButtonRef = useRef(null);
   const previousFocusRef = useRef(null);
 
+  // Open/Close Focus & Scroll Lock Effect
   useEffect(() => {
     if (!isOpen) return;
 
     previousFocusRef.current = document.activeElement;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
     closeButtonRef.current?.focus();
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      if (previousFocusRef.current && typeof previousFocusRef.current.focus === "function") {
+        previousFocusRef.current.focus();
+      }
+    };
+  }, [isOpen]);
+
+  // Keyboard Listener Effect
+  useEffect(() => {
+    if (!isOpen) return;
 
     const handleKeyDown = (e) => {
       if (e.key === "Escape") {
@@ -28,15 +43,8 @@ export default function LightboxModal({
     };
 
     document.addEventListener("keydown", handleKeyDown);
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = previousOverflow;
-      if (previousFocusRef.current && typeof previousFocusRef.current.focus === "function") {
-        previousFocusRef.current.focus();
-      }
     };
   }, [isOpen, onClose, onPrev, onNext]);
 
