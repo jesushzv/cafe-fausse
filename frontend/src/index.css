@@ -1,0 +1,548 @@
+/* ==========================================================================
+   Café Fausse Design System
+   Fine Italian Dining Aesthetic: Mahogany/Espresso, Warm Ivory, Chandelier Gold
+   Built with CSS Custom Properties, Flexbox, and CSS Grid (NFR-4, NFR-8)
+   ========================================================================== */
+
+:root {
+  /* Dark Mahogany / Espresso Surfaces */
+  --bg-dark: #16100C;
+  --bg-elevated: #231914;
+  --bg-dark-translucent: rgba(22, 16, 12, 0.94);
+
+  /* Warm Ivory / Linen Light Surfaces */
+  --bg-ivory: #FAF6F0;
+  --bg-cream: #F2EAE0;
+
+  /* Chandelier Gold Accents */
+  --gold-primary: #C8A25A;
+  --gold-light: #E2C488;
+  --gold-hover: #B38B42;
+  --gold-hairline: rgba(200, 162, 90, 0.25);
+
+  /* Typography Colors */
+  --text-light: #FAF6F0;
+  --text-light-muted: #CBBBA8;
+  --text-dark: #221A15;
+  --text-muted: #6E5D50;
+
+  /* Semantic Status Colors (NFR-6) */
+  --status-success-bg: rgba(46, 125, 50, 0.12);
+  --status-success-text: #2E7D32;
+  --status-success-border: rgba(46, 125, 50, 0.35);
+  --status-error-bg: rgba(183, 28, 28, 0.10);
+  --status-error-text: #B71C1C;
+  --status-error-border: rgba(183, 28, 28, 0.35);
+
+  /* Typography Families */
+  --font-serif: 'Playfair Display', Georgia, serif;
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+  /* Spacing & Sizing */
+  --container-max: 1200px;
+  --header-height: 76px;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --transition-fast: 0.2s ease;
+  --transition-base: 0.3s ease;
+}
+
+/* Base Reset */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.65;
+  color: var(--text-dark);
+  background-color: var(--bg-ivory);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  line-height: 1.25;
+  margin-top: 0;
+}
+
+p {
+  margin-top: 0;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+/* Accessible Focus Outlines */
+:focus-visible {
+  outline: 2px solid var(--gold-primary);
+  outline-offset: 3px;
+}
+
+/* App Shell Layout */
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.app-main {
+  flex: 1;
+}
+
+/* Container & Section Spacing Utilities */
+.container {
+  width: 100%;
+  max-width: var(--container-max);
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+}
+
+.section {
+  padding-top: 4.5rem;
+  padding-bottom: 4.5rem;
+}
+
+.section-sm {
+  padding-top: 2.5rem;
+  padding-bottom: 2.5rem;
+}
+
+.section-dark {
+  background-color: var(--bg-dark);
+  color: var(--text-light);
+}
+
+.section-cream {
+  background-color: var(--bg-cream);
+  color: var(--text-dark);
+}
+
+/* CSS Grid Primitives (NFR-8) */
+.grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2rem;
+}
+
+.grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 2rem;
+}
+
+.grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 2rem;
+}
+
+.grid-auto-fit {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 2rem;
+}
+
+/* Flexbox Utilities */
+.flex {
+  display: flex;
+}
+
+.flex-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.flex-wrap {
+  flex-wrap: wrap;
+}
+
+.items-center {
+  align-items: center;
+}
+
+.justify-between {
+  justify-content: space-between;
+}
+
+.justify-center {
+  justify-content: center;
+}
+
+.gap-sm {
+  gap: 0.75rem;
+}
+
+.gap-md {
+  gap: 1.25rem;
+}
+
+.gap-lg {
+  gap: 2rem;
+}
+
+/* Shared Button Styles */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.7rem 1.5rem;
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background-color var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast);
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn-gold {
+  background-color: var(--gold-primary);
+  color: var(--bg-dark);
+  border-color: var(--gold-primary);
+}
+
+.btn-gold:hover {
+  background-color: var(--gold-hover);
+  border-color: var(--gold-hover);
+}
+
+.btn-outline {
+  background-color: transparent;
+  color: var(--gold-light);
+  border-color: var(--gold-primary);
+}
+
+.btn-outline:hover {
+  background-color: var(--gold-primary);
+  color: var(--bg-dark);
+}
+
+/* Editorial Page Header Shell (Dark Mahogany Hero Strip) */
+.page-header {
+  background-color: var(--bg-dark);
+  color: var(--text-light);
+  padding: 4rem 0 3.5rem;
+  border-bottom: 1px solid var(--gold-hairline);
+  text-align: center;
+}
+
+.page-header__eyebrow {
+  display: inline-block;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--gold-primary);
+  margin-bottom: 0.75rem;
+}
+
+.page-header__title {
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 600;
+  color: var(--text-light);
+  margin-bottom: 0.75rem;
+}
+
+.page-header__subtitle {
+  max-width: 640px;
+  margin: 0 auto;
+  color: var(--text-light-muted);
+  font-size: 1.05rem;
+}
+
+.gold-divider {
+  width: 64px;
+  height: 2px;
+  background-color: var(--gold-primary);
+  margin: 1.25rem auto 0;
+  border: none;
+}
+
+/* Subtle Status Pill */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.9rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  border: 1px solid var(--gold-hairline);
+  background-color: var(--bg-cream);
+  color: var(--text-dark);
+}
+
+.status-pill--ok {
+  background-color: var(--status-success-bg);
+  color: var(--status-success-text);
+  border-color: var(--status-success-border);
+}
+
+.status-pill--error {
+  background-color: var(--status-error-bg);
+  color: var(--status-error-text);
+  border-color: var(--status-error-border);
+}
+
+/* ==========================================================================
+   Navbar (Flexbox, Sticky Espresso Header)
+   ========================================================================== */
+.navbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background-color: var(--bg-dark-translucent);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--gold-hairline);
+  color: var(--text-light);
+}
+
+.navbar__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: var(--header-height);
+}
+
+.navbar__brand {
+  font-family: var(--font-serif);
+  font-size: 1.55rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--gold-light);
+  white-space: nowrap;
+}
+
+.navbar__brand:hover {
+  color: var(--gold-primary);
+}
+
+.navbar__menu {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+
+.navbar__links {
+  display: flex;
+  align-items: center;
+  gap: 1.75rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.navbar__link {
+  position: relative;
+  font-size: 0.9rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--text-light-muted);
+  padding: 0.35rem 0;
+}
+
+.navbar__link:hover {
+  color: var(--text-light);
+}
+
+.navbar__link--active {
+  color: var(--gold-light);
+}
+
+.navbar__link--active::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -2px;
+  height: 2px;
+  background-color: var(--gold-primary);
+}
+
+.navbar__toggle {
+  display: none;
+  background: transparent;
+  border: 1px solid var(--gold-hairline);
+  border-radius: var(--radius-sm);
+  color: var(--gold-light);
+  padding: 0.45rem 0.65rem;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+}
+
+.navbar__toggle:hover {
+  border-color: var(--gold-primary);
+}
+
+/* ==========================================================================
+   Footer (CSS Grid, Deep Espresso)
+   ========================================================================== */
+.footer {
+  background-color: var(--bg-dark);
+  color: var(--text-light);
+  border-top: 1px solid var(--gold-hairline);
+  padding-top: 4rem;
+  padding-bottom: 2rem;
+}
+
+.footer__grid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr 0.9fr;
+  gap: 2.5rem;
+  padding-bottom: 3rem;
+  border-bottom: 1px solid var(--gold-hairline);
+}
+
+.footer__brand {
+  font-family: var(--font-serif);
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--gold-light);
+  margin-bottom: 0.75rem;
+}
+
+.footer__tagline {
+  color: var(--text-light-muted);
+  font-size: 0.95rem;
+  max-width: 300px;
+}
+
+.footer__heading {
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--gold-primary);
+  margin-bottom: 1rem;
+}
+
+.footer__text {
+  color: var(--text-light-muted);
+  font-size: 0.92rem;
+  margin-bottom: 0.5rem;
+}
+
+.footer__links {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.footer__link {
+  color: var(--text-light-muted);
+  font-size: 0.92rem;
+}
+
+.footer__link:hover {
+  color: var(--gold-light);
+}
+
+.footer__bottom {
+  padding-top: 1.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  color: var(--text-light-muted);
+  font-size: 0.85rem;
+}
+
+/* ==========================================================================
+   Responsive Breakpoints (NFR-8: Tablet <= 900px, Mobile <= 640px)
+   ========================================================================== */
+@media (max-width: 900px) {
+  .grid-3,
+  .grid-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .footer__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .navbar__toggle {
+    display: inline-flex;
+  }
+
+  .navbar__menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background-color: var(--bg-elevated);
+    border-bottom: 1px solid var(--gold-hairline);
+    flex-direction: column;
+    align-items: stretch;
+    padding: 1.5rem;
+    gap: 1.25rem;
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.35);
+  }
+
+  .navbar__menu--open {
+    display: flex;
+  }
+
+  .navbar__links {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.9rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .grid-2,
+  .grid-3,
+  .grid-4 {
+    grid-template-columns: 1fr;
+  }
+
+  .footer__grid {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  .section {
+    padding-top: 3rem;
+    padding-bottom: 3rem;
+  }
+
+  .page-header {
+    padding: 3rem 0 2.5rem;
+  }
+}
+
