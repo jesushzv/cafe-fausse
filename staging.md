@@ -1,8 +1,12 @@
-# Staging Environment
+# Environment & Staging Notes
 
-The Café Fausse application currently runs locally:
-- **Frontend Dev URL**: `http://localhost:5173`
-- **Backend API URL**: `http://localhost:5000`
+The **Café Fausse** full-stack web application is configured and demonstrated **locally (`localhost`)**:
 
-### Future Staging URL
-*(To be configured in a subsequent deployment phase)*
+- **Frontend (Vite + React JSX)**: `http://localhost:5173`
+- **Backend API (Flask)**: `http://127.0.0.1:5000` (proxied automatically via `/api` from Vite)
+- **Database (PostgreSQL)**: Configured via `DATABASE_URL` in `backend/.env`
+
+Please refer to [`README.md`](./README.md) for complete local setup, database initialization, and startup instructions.
+
+### Optional Future Staging Deployment
+*(Reserved for an optional cloud staging URL if deployed later.)*

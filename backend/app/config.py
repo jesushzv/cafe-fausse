@@ -8,3 +8,7 @@ class Config:
     PORT = int(os.getenv("PORT", 5000))
     SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL", "postgresql+psycopg://localhost:5432/cafe_fausse")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        "pool_pre_ping": True,
+        "pool_recycle": 280,
+    }

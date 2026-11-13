@@ -1083,7 +1083,7 @@ img {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1.5rem;
+  padding: 3.5rem 1.25rem 1.5rem;
 }
 
 .lightbox-dialog {
@@ -1520,5 +1520,19 @@ img {
 
   .form-card {
     padding: 1.5rem;
+  }
+
+  .slots-grid {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  }
+
+  .newsletter-form .btn {
+    width: 100%;
+  }
+
+  .lightbox-nav {
+    width: 38px;
+    height: 38px;
+    font-size: 1.1rem;
   }
 }
