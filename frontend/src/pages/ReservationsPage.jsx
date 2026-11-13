@@ -48,12 +48,13 @@ export default function ReservationsPage() {
   const [confirmation, setConfirmation] = useState(null);
 
   const fetchSlots = useCallback(
-    async (dateStr) => {
+    async (dateStr, { signal } = {}) => {
       if (!dateStr) return;
       setSlotsLoading(true);
       setSlotsError(null);
       try {
-        const data = await getAvailability(dateStr);
+        const data = await getAvailability(dateStr, { signal });
+        if (signal?.aborted) return;
         const now = new Date();
         // Filter out past slots when viewing today
         const validSlots = (data.slots || []).filter((slot) => {
@@ -75,19 +76,24 @@ export default function ReservationsPage() {
             : validSlots[0]?.time_slot || "";
         });
       } catch (err) {
+        if (err.name === "AbortError") return;
         setSlotsError(
           err.message || "Unable to load time slots for the selected date."
         );
         setSlots([]);
       } finally {
-        setSlotsLoading(false);
+        if (!signal?.aborted) {
+          setSlotsLoading(false);
+        }
       }
     },
     [todayStr]
   );
 
   useEffect(() => {
-    fetchSlots(selectedDate);
+    const controller = new AbortController();
+    fetchSlots(selectedDate, { signal: controller.signal });
+    return () => controller.abort();
   }, [selectedDate, fetchSlots]);
 
   const handleDateChange = (e) => {
@@ -311,7 +317,7 @@ export default function ReservationsPage() {
                     )}
 
                     {!slotsLoading && slots.length > 0 && (
-                      <div className="slots-grid" role="radiogroup" aria-label="Available seating times">
+                      <div className="slots-grid" role="group" aria-label="Available seating times">
                         {slots.map((slot) => {
                           const isSelected = selectedSlot === slot.time_slot;
                           const isFull = slot.tables_available === 0;
@@ -326,8 +332,8 @@ export default function ReservationsPage() {
                             <button
                               key={slot.time_slot}
                               type="button"
-                              role="radio"
-                              aria-checked={isSelected}
+                              aria-pressed={isSelected}
+                              aria-label={`${slot.time_display} — ${metaLabel}`}
                               disabled={submitting}
                               onClick={() => {
                                 setSelectedSlot(slot.time_slot);

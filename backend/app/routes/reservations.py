@@ -1,12 +1,14 @@
 import random
-from datetime import datetime, date
-from flask import Blueprint, request, jsonify
+from datetime import datetime
+from flask import Blueprint, request, jsonify, current_app
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import func
 from app.extensions import db
 from app.models import Customer, Reservation
 from app.validators import (
     normalize_email,
+    validate_customer_name,
+    validate_phone_number,
     validate_guests,
     parse_and_validate_time_slot,
     get_valid_slots_for_date,
@@ -16,6 +18,7 @@ reservations_bp = Blueprint("reservations", __name__)
 
 @reservations_bp.route("/reservations/availability", methods=["GET"])
 def check_availability():
+    """Return all valid 30-minute dinner slots and remaining table counts for a date."""
     date_str = request.args.get("date")
     if not date_str:
         return jsonify({"error": "The 'date' query parameter is required (YYYY-MM-DD)."}), 400
@@ -25,7 +28,6 @@ def check_availability():
     except ValueError:
         return jsonify({"error": "Invalid date format. Expected YYYY-MM-DD."}), 400
 
-    # Query reservations booked for target_date
     start_dt = datetime.combine(target_date, datetime.min.time())
     end_dt = datetime.combine(target_date, datetime.max.time())
 
@@ -62,65 +64,72 @@ def check_availability():
 
 @reservations_bp.route("/reservations", methods=["POST"])
 def create_reservation():
+    """Validate booking, upsert customer, and assign a random open table (1-30)."""
     data = request.get_json(silent=True)
     if not data or not isinstance(data, dict):
         return jsonify({"error": "Invalid request body. Expected JSON payload."}), 400
 
-    # 1. Validate customer name
-    raw_name = data.get("customer_name")
-    if not raw_name or not isinstance(raw_name, str) or not raw_name.strip():
-        return jsonify({"error": "Customer name is required."}), 400
-    customer_name = raw_name.strip()
-
-    # 2. Validate email
+    # 1-5. Validate all fields cleanly
     try:
+        customer_name = validate_customer_name(data.get("customer_name"), required=True)
         email = normalize_email(data.get("email"))
-    except ValueError as ve:
-        return jsonify({"error": str(ve)}), 400
-
-    # 3. Validate number of guests (1-12)
-    try:
         num_guests = validate_guests(data.get("num_guests"))
-    except ValueError as ve:
-        return jsonify({"error": str(ve)}), 400
-
-    # 4. Validate time slot
-    try:
         parsed_slot = parse_and_validate_time_slot(data.get("time_slot"))
+        phone_number = validate_phone_number(data.get("phone_number"))
     except ValueError as ve:
         return jsonify({"error": str(ve)}), 400
 
-    # 5. Optional fields
-    raw_phone = data.get("phone_number")
-    phone_number = raw_phone.strip() if raw_phone and isinstance(raw_phone, str) else None
     newsletter_signup = bool(data.get("newsletter_signup", False))
 
-    # 6. Upsert Customer record
-    customer = Customer.query.filter_by(email=email).first()
-    if not customer:
-        customer = Customer(
-            email=email,
-            customer_name=customer_name,
-            phone_number=phone_number,
-            newsletter_signup=newsletter_signup,
-        )
-        db.session.add(customer)
-    else:
-        # Update details without overwriting newsletter=True with False
-        customer.customer_name = customer_name
-        if phone_number:
-            customer.phone_number = phone_number
-        if newsletter_signup:
-            customer.newsletter_signup = True
-
+    # 6. Upsert & commit Customer BEFORE entering Reservation retry loop
     try:
-        db.session.flush()
-    except Exception as e:
+        customer = Customer.query.filter_by(email=email).first()
+        if not customer:
+            customer = Customer(
+                email=email,
+                customer_name=customer_name,
+                phone_number=phone_number,
+                newsletter_signup=newsletter_signup,
+            )
+            db.session.add(customer)
+        else:
+            customer.customer_name = customer_name
+            if phone_number:
+                customer.phone_number = phone_number
+            if newsletter_signup:
+                customer.newsletter_signup = True
+
+        db.session.commit()
+    except IntegrityError:
+        # Handle concurrent duplicate-email insert gracefully
         db.session.rollback()
-        return jsonify({"error": f"Failed to register customer: {str(e)}"}), 500
+        try:
+            customer = Customer.query.filter_by(email=email).first()
+            if not customer:
+                current_app.logger.exception("Concurrent customer upsert failed")
+                return jsonify({"error": "Unable to process your reservation right now. Please try again."}), 500
+            customer.customer_name = customer_name
+            if phone_number:
+                customer.phone_number = phone_number
+            if newsletter_signup:
+                customer.newsletter_signup = True
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            current_app.logger.exception("Customer upsert retry failed")
+            return jsonify({"error": "Unable to process your reservation right now. Please try again."}), 500
+    except Exception:
+        db.session.rollback()
+        current_app.logger.exception("Failed to register customer")
+        return jsonify({"error": "Unable to process your reservation right now. Please try again."}), 500
+
+    # Store plain scalar values so rollback inside the reservation loop cannot detach them
+    customer_id = customer.customer_id
+    saved_name = customer.customer_name
+    saved_email = customer.email
+    saved_phone = customer.phone_number
 
     # 7. Check table availability and assign table (1-30)
-    # Attempt table assignment with retry on concurrency collision
     max_attempts = 3
     reservation = None
 
@@ -134,14 +143,13 @@ def create_reservation():
         available_tables = [t for t in range(1, 31) if t not in occupied_tables]
 
         if not available_tables:
-            db.session.rollback()
             return jsonify({
                 "error": "All 30 tables are fully booked for this time slot. Please select another time."
             }), 409
 
         assigned_table = random.choice(available_tables)
         reservation = Reservation(
-            customer_id=customer.customer_id,
+            customer_id=customer_id,
             time_slot=parsed_slot,
             table_number=assigned_table,
             num_guests=num_guests,
@@ -158,6 +166,10 @@ def create_reservation():
                 return jsonify({
                     "error": "All 30 tables are fully booked for this time slot. Please select another time."
                 }), 409
+        except Exception:
+            db.session.rollback()
+            current_app.logger.exception("Unexpected error creating reservation")
+            return jsonify({"error": "Unable to complete your reservation right now. Please try again."}), 500
 
     if not reservation:
         return jsonify({
@@ -172,9 +184,8 @@ def create_reservation():
             "table_number": reservation.table_number,
             "time_slot": reservation.time_slot.isoformat(),
             "num_guests": reservation.num_guests,
-            "customer_name": customer.customer_name,
-            "email": customer.email,
-            "phone_number": customer.phone_number,
+            "customer_name": saved_name,
+            "email": saved_email,
+            "phone_number": saved_phone,
         },
     }), 201
-

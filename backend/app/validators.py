@@ -2,15 +2,50 @@ import re
 from datetime import datetime, date, time
 
 EMAIL_REGEX = re.compile(r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$")
+PHONE_REGEX = re.compile(r"^[0-9+\-().\s]{3,30}$")
 
 def normalize_email(email_str: str) -> str:
-    """Validate and normalize email address (strip and lowercase)."""
+    """Validate and normalize email address (strip and lowercase, max 255 chars)."""
     if not email_str or not isinstance(email_str, str):
         raise ValueError("A valid email address is required.")
     normalized = email_str.strip().lower()
+    if len(normalized) > 255:
+        raise ValueError("Email address must be 255 characters or fewer.")
     if not EMAIL_REGEX.match(normalized):
         raise ValueError("Invalid email address format.")
     return normalized
+
+def validate_customer_name(raw_name, required: bool = True):
+    """Validate customer name length (1..120 chars when required, or optional <= 120 chars)."""
+    if raw_name is None:
+        if required:
+            raise ValueError("Customer name is required.")
+        return None
+    if not isinstance(raw_name, str):
+        raise ValueError("Customer name must be a valid text string.")
+    cleaned = raw_name.strip()
+    if not cleaned:
+        if required:
+            raise ValueError("Customer name is required.")
+        return None
+    if len(cleaned) > 120:
+        raise ValueError("Customer name must be 120 characters or fewer.")
+    return cleaned
+
+def validate_phone_number(raw_phone):
+    """Validate optional phone number (empty/None allowed, otherwise 3..30 valid phone chars)."""
+    if raw_phone is None:
+        return None
+    if not isinstance(raw_phone, str):
+        raise ValueError("Phone number must be a valid text string.")
+    cleaned = raw_phone.strip()
+    if not cleaned:
+        return None
+    if len(cleaned) > 30:
+        raise ValueError("Phone number must be 30 characters or fewer.")
+    if not PHONE_REGEX.match(cleaned):
+        raise ValueError("Please enter a valid phone number (digits, spaces, +, -, or parentheses).")
+    return cleaned
 
 def validate_guests(num_guests) -> int:
     """Validate guest count between 1 and 12 (FR-6)."""

@@ -244,6 +244,17 @@ img {
   color: var(--bg-dark);
 }
 
+.btn-outline-dark {
+  background-color: transparent;
+  color: var(--text-dark);
+  border-color: var(--gold-primary);
+}
+
+.btn-outline-dark:hover {
+  background-color: var(--gold-primary);
+  color: var(--bg-dark);
+}
+
 /* Editorial Page Header Shell (Dark Mahogany Hero Strip) */
 .page-header {
   background-color: var(--bg-dark);

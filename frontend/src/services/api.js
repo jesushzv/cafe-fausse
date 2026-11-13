@@ -45,10 +45,11 @@ export function checkHealth() {
 /**
  * Fetch 30-minute slot availability for a given YYYY-MM-DD date string.
  */
-export function getAvailability(dateStr) {
+export function getAvailability(dateStr, { signal } = {}) {
   const params = new URLSearchParams({ date: dateStr });
   return request(`/reservations/availability?${params.toString()}`, {
     method: "GET",
+    signal,
   });
 }
 

@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 
 export default function LightboxModal({
   images,
@@ -8,9 +8,14 @@ export default function LightboxModal({
   onNext,
 }) {
   const isOpen = currentIndex !== null && images && images[currentIndex];
+  const closeButtonRef = useRef(null);
+  const previousFocusRef = useRef(null);
 
   useEffect(() => {
     if (!isOpen) return;
+
+    previousFocusRef.current = document.activeElement;
+    closeButtonRef.current?.focus();
 
     const handleKeyDown = (e) => {
       if (e.key === "Escape") {
@@ -29,6 +34,9 @@ export default function LightboxModal({
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = previousOverflow;
+      if (previousFocusRef.current && typeof previousFocusRef.current.focus === "function") {
+        previousFocusRef.current.focus();
+      }
     };
   }, [isOpen, onClose, onPrev, onNext]);
 
@@ -52,6 +60,7 @@ export default function LightboxModal({
     >
       <div className="lightbox-dialog">
         <button
+          ref={closeButtonRef}
           type="button"
           className="lightbox-close"
           onClick={onClose}

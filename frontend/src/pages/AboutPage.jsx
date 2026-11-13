@@ -10,7 +10,7 @@ export default function AboutPage() {
           <span className="page-header__eyebrow">Our Heritage &bull; Est. {ABOUT_CONTENT.foundedYear}</span>
           <h1 className="page-header__title">About Café Fausse</h1>
           <p className="page-header__subtitle">
-            Traditional Italian flavors meets modern culinary innovation in the heart of Washington, DC.
+            Traditional Italian flavors meet modern culinary innovation in the heart of Washington, DC.
           </p>
           <hr className="gold-divider" />
         </div>
@@ -83,8 +83,7 @@ export default function AboutPage() {
             </Link>
             <Link
               to="/menu"
-              className="btn btn-outline"
-              style={{ color: "var(--text-dark)" }}
+              className="btn btn-outline-dark"
             >
               Explore the Menu
             </Link>

@@ -115,8 +115,7 @@ export default function HomePage() {
               </Link>
               <Link
                 to="/gallery"
-                className="btn btn-outline"
-                style={{ color: "var(--text-dark)" }}
+                className="btn btn-outline-dark"
               >
                 Explore Gallery
               </Link>

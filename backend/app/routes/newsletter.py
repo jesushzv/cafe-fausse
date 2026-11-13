@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
 from app.extensions import db
 from app.models import Customer
-from app.validators import normalize_email
+from app.validators import normalize_email, validate_customer_name
 
 newsletter_bp = Blueprint("newsletter", __name__)
 
@@ -14,14 +14,9 @@ def subscribe_newsletter():
     raw_email = data.get("email")
     try:
         email = normalize_email(raw_email)
+        customer_name = validate_customer_name(data.get("customer_name"), required=False)
     except ValueError as ve:
         return jsonify({"error": str(ve)}), 400
-
-    customer_name = data.get("customer_name")
-    if customer_name and isinstance(customer_name, str):
-        customer_name = customer_name.strip() or None
-    else:
-        customer_name = None
 
     customer = Customer.query.filter_by(email=email).first()
 

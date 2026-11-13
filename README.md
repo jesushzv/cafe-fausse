@@ -71,7 +71,7 @@ cp .env.example .env
 Update `backend/.env` with your PostgreSQL connection string (using the `postgresql+psycopg://` SQLAlchemy driver) and desired port:
 ```env
 FLASK_ENV=development
-PORT=5000
+PORT=5001
 DATABASE_URL=postgresql+psycopg://localhost:5432/cafe_fausse
 ```
 
@@ -85,7 +85,7 @@ Start the Flask development server:
 ```bash
 python run.py
 ```
-The Flask API runs at `http://127.0.0.1:5000`.
+The Flask API runs at `http://127.0.0.1:5001`.
 
 ### 3. Frontend Setup (`frontend/`)
 Open a new terminal tab:
@@ -94,7 +94,7 @@ cd frontend
 npm install
 npm run dev
 ```
-The Vite dev server runs at `http://localhost:5173`. Requests to `/api/*` are automatically proxied by `vite.config.js` to `http://127.0.0.1:5000`.
+The Vite dev server runs at `http://localhost:5173`. Requests to `/api/*` are automatically proxied by `vite.config.js` to `http://127.0.0.1:5001`.
 
 ---
 
