@@ -1,5 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import NewsletterSignup from "../components/NewsletterSignup";
 import {
   RESTAURANT_INFO,
   FEATURED_DISHES,
@@ -124,16 +125,18 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 5. Newsletter Slot Placeholder (Phase 5B Integration) */}
+      {/* 5. Newsletter Signup Section (FR-15, FR-16) */}
       <section id="newsletter-slot" className="section newsletter-slot">
         <div className="container">
-          <div className="section-header" style={{ marginBottom: 0 }}>
+          <div className="section-header" style={{ marginBottom: "1.5rem" }}>
             <span className="section-header__eyebrow">Stay Connected</span>
             <h2 className="section-header__title">Join Our Culinary Circle</h2>
             <p className="section-header__subtitle">
-              Seasonal menu previews, private wine dinners, and chef events. (Newsletter signup form coming in Phase 5B.)
+              Receive seasonal menu previews, private wine dinner invitations, and chef events.
             </p>
+            <hr className="gold-divider" />
           </div>
+          <NewsletterSignup />
         </div>
       </section>
     </div>
